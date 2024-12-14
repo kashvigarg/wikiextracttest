@@ -85,18 +85,18 @@ import json
 from io import StringIO
 from multiprocessing import Queue, Process, Value, cpu_count
 from timeit import default_timer
-
+import html
 
 PY2 = sys.version_info[0] == 2
 # Python 2.7 compatibiity
 if PY2:
     from urllib import quote
-    from htmlentitydefs import name2codepoint
+    from html.entities import name2codepoint
     from itertools import izip as zip, izip_longest as zip_longest
 
-    range = xrange  # Use Python 3 equivalent
-    chr = unichr  # Use Python 3 equivalent
-    text_type = unicode
+    range = range  # Use Python 3 equivalent
+    chr = chr  # Use Python 3 equivalent
+    text_type = str 
 
     class SimpleNamespace(object):
         def __init__(self, **kwargs):
@@ -2529,7 +2529,7 @@ wgUrlProtocols = [
 # as well as U+3000 is IDEOGRAPHIC SPACE for bug 19052
 EXT_LINK_URL_CLASS = r'[^][<>"\x00-\x20\x7F\s]'
 ANCHOR_CLASS = r"[^][\x00-\x08\x0a-\x1F]"
-ExtLinkBracketedRegex = re.compile(
+ExtLinkBracketedRegex =  re.compile(
     r"\[(((?i)"
     + "|".join(wgUrlProtocols)
     + ")"
@@ -2541,8 +2541,9 @@ ExtLinkBracketedRegex = re.compile(
     + ANCHOR_CLASS
     + r"+\]\])"
     + r"*?)\]",
-    re.S | re.U,
+    re.S | re.U | re.IGNORECASE,
 )
+
 # A simpler alternative:
 # ExtLinkBracketedRegex = re.compile(r'\[(.*?)\](?!])')
 
@@ -2985,7 +2986,7 @@ def process_dump(
     if input_file == "-":
         input = sys.stdin
     else:
-        input = fileinput.FileInput(input_file, openhook=fileinput.hook_compressed)
+        input = fileinput.FileInput(input_file, openhook=fileinput.hook_compressed, encoding="utf-8")
 
     # collect siteinfo
     for line in input:

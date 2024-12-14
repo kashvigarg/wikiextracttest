@@ -2,6 +2,7 @@ import random
 import sys
 from difflib import SequenceMatcher
 from math import ceil
+import csv
 
 'अंग्रेजा', 'पड़ते', 'बनीं',
 
@@ -68,6 +69,8 @@ def pos_tag(sentence):
     tags_better = []
     for word in sentence:
         components = word.split('\t')
+        if len(components) < 3:
+            continue  # Or handle the error appropriately
         actual_words.append(components[0])
         tags.append(components[2])
         tags_better.append(components)
@@ -89,73 +92,52 @@ def endswith_any(word, endings):
 def insert_errors(pos_tags):
     err = []
     cor = []
+    edit_types = []  # New list to store edit types
 
     for token, tag, _ in pos_tags:
         try:
             if token in skip_tokens or len(token) < 2:
                 err.append(token)
+                edit_types.append("NO_ERR")  # No edit applied
             elif tag == 'PSP' and token[-1] in adj and token[-2] in ('क', 'ल'):
                 err.append(token[:-1] + random_except(adj, token[-1]))
+                edit_types.append("PSP")
             elif list(filter(lambda ex: token in ex, exceptions)):
                 exs = list(filter(lambda ex: token in ex, exceptions))
                 err.append(random_except(exs[0], token))
-            elif len(token) >4 and token[-1] in adj and  token[-4:-1] == 'वाल':
+                edit_types.append("EXCEPTION")
+            elif len(token) > 4 and token[-1] in adj and token[-4:-1] == 'वाल':
                 err.append(token[:-1] + random_except(adj, token[-1]))
+                edit_types.append("ADJ_CONJ")
             elif tag in ('JJ', 'QO') and token[-1] in adj and (token[:-1] + adj[0]) in conjugated_adj:
                 err.append(token[:-1] + random_except(adj, token[-1]))
+                edit_types.append("CONJ_ADJ")
             elif tag == 'PRP' and token[-1] in adj and (token[-2] in ('र', 'क') or token.startswith('अप')):
                 err.append(token[:-1] + random_except(adj, token[-1]))
+                edit_types.append("PRP")
             elif tag == 'VAUX':
                 if len(token) == 2 and token[-1] in vb[-2:]:
                     err.append(token[0] + random.choice(endings1[:2]))
+                    edit_types.append("VAUX_SHORT")
                 elif endswith_any(token, endings1):
                     ending = endswith_any(token, endings1)
                     substitute = random_except(endings1, ending)
-                    if token[:len(ending)][-1] == 'ि' and substitute in ('ई', 'ईं'):
-                        err.append(token[:-3] + random.choice(vb[-2:]))
-                    else:
-                        err.append(token.strip(ending) + substitute)
-                elif endswith_any(token, endings2):
-                    ending = endswith_any(token, endings2)
-                    err.append(token[:-len(ending)] + random_except(endings2, ending))
-                elif token[-1] in vb:
-                    err.append(token[:-1] + random_except(vb, token[-1]))
+                    err.append(token.strip(ending) + substitute)
+                    edit_types.append("VAUX")
                 else:
                     err.append(token)
-            elif tag == 'VM' and token[-1] in adj:
-                if len(token) == 2 and token[-1] in vb[-2:]:
-                    err.append(token[0] + random.choice(endings1[:2]))
-                elif token[-2] == 'न' and token[-1] in ('ा', 'े'):
-                    err.append(token[:-1] + random_except(('ा', 'े'), token[-1]))
-                elif token[-2] == 'ग':
-                    substitute = random_except(adj, token[-1])
-                    if token[-3] == 'ं':  # karenge -> karega:
-                        token = token[:-3] + token[-2:]
-                    elif substitute == 'े':
-                        token = token[:-2] + 'ं' + token[-2:]
-                    err.append(token[:-1] + substitute)
-                elif endswith_any(token, endings1):
-                    ending = endswith_any(token, endings1)
-                    substitute = random_except(endings1, ending)
-                    if token[:len(ending)][-1] == 'ि' and substitute in ('ई', 'ईं'):
-                        err.append(token[:-3] + random.choice(vb[-2:]))
-                    else:
-                        err.append(token.strip(ending) + substitute)
-                elif endswith_any(token, endings2):
-                    ending = endswith_any(token, endings2)
-                    err.append(token[:-len(ending)] + random_except(endings2, ending))
-                else:
-                    substitute = random_except(adj, token[-1])
-                    err.append(token[:-1] + substitute)
+                    edit_types.append("NO_ERR")
             else:
                 err.append(token)
+                edit_types.append("NO_ERR")
             cor.append(token)
         except IndexError as e:
             print(token, tag, e, file=sys.stderr)
-    return ' '.join(err), ' '.join(cor)
+    return ' '.join(err), ' '.join(cor), ', '.join(edit_types)
 
 
-def select_edits(err, cor, selection_ratio=1):
+
+def select_edits(err, cor, edit_types, selection_ratio=1):
     mismatch = []
     err, cor = err.split(), cor.split()
     mm = []
@@ -171,20 +153,33 @@ def select_edits(err, cor, selection_ratio=1):
 
 
 def main(args):
+    print("is it running?")
+    output_rows = []
+    print(args.input_file[:10])
     with open(args.input_file) as input_file:
         for sentence in sentence_wise(input_file):
             sentence_tagged = pos_tag(sentence)
+            
             inserted_errors = insert_errors(sentence_tagged)
+            
             if args.single is not None:
                 inserted_errors = select_edits(*inserted_errors, args.single)
             else:
                 inserted_errors = [inserted_errors]
-            for cor, err in inserted_errors:
+
+            for cor, err, edit_types in inserted_errors:
+                # for edit_type in edit_types:  # Add rows for each edit type
+                output_rows.append([err, cor, edit_type])
                 if args.edits:
                     print(convert_to_edits(err, cor))
                 else:
                     print(convert_to_wdiff(err, cor))
-
+    # Write to CSV
+    with open("train.csv", "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["hi_err", "hi_corr", "error"])  # Header row
+        writer.writerows(output_rows)  # Data rows
+    print("Training data saved to training_data.csv")
 
 if __name__ == '__main__':
     import argparse

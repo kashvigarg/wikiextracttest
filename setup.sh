@@ -3,13 +3,13 @@
 set -e
 set -x
 
-if [ ! -f hiwiki-pages-meta-current.xml ]; then
-echo "DOWNLOADING HIWIKI"
-# You may need to update this link as older dumps are deleted all the time. Point it to a "current" wiki dump
-curl -L --fail  --remote-name-all https://dumps.wikimedia.org/hiwiki/20240720/hiwiki-20240720-pages-meta-current.xml.bz2   --output hiwiki-pages-meta-current.xml.bz2
-bzip2 -d  hiwiki-pages-meta-current.xml.bz2
-rm hiwiki-pages-meta-current.xml.bz2
-fi
+# if [ ! -f hiwiki-pages-meta-current.xml ]; then
+# echo "DOWNLOADING HIWIKI"
+# # You may need to update this link as older dumps are deleted all the time. Point it to a "current" wiki dump
+# curl -L --fail  --remote-name-all https://dumps.wikimedia.org/hiwiki/20240720/hiwiki-20240720-pages-meta-current.xml.bz2   --output hiwiki-pages-meta-current.xml.bz2
+# bzip2 -d  hiwiki-pages-meta-current.xml.bz2
+# rm hiwiki-pages-meta-current.xml.bz2
+# fi
 
 
 if [ ! -d hindi-pos-tagger-3.0 ]; then
