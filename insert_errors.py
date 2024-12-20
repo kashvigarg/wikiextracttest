@@ -21,46 +21,9 @@ conjugated_adj = ('लंबा', 'ऊंचा', 'धीमा', 'महंग�
 
 adj = ('ा', 'े', 'ी')
 vb = ('ा', 'े', 'ी', 'ीं')
-
 endings1 = ('या', 'ए', 'ई', 'ईं',)
 endings2 = ('या', 'ये', 'यी', 'यीं')
 
-
-
-def convert_to_edits(err, cor):
-    return f'{err}\n{cor}\n'
-
-
-def convert_to_wdiff(err, cor):
-    result = []
-    err_toks, cor_toks = err.split(), cor.split()
-    matcher = SequenceMatcher(None, err_toks, cor_toks)
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        err_part = ' '.join(err_toks[i1:i2])
-        cor_part = ' '.join(cor_toks[j1:j2])
-        if tag == 'replace':
-            result.append("[-{}-] {{+{}+}}".format(err_part, cor_part))
-        elif tag == 'insert':
-            result.append("{{+{}+}}".format(cor_part))
-        elif tag == 'delete':
-            result.append("[-{}-]".format(err_part))
-        else:
-            result.append(err_part)
-    return ' '.join(result)
-
-
-def sentence_wise(file):
-    sentence = []
-    for line in file:
-        line = line.strip()
-        if line == '</s>':
-            yield sentence
-            sentence = []
-        elif line == '<s>':
-            pass
-        else:
-            sentence.append(line)
-    yield sentence
 
 
 def pos_tag(sentence):

@@ -690,12 +690,12 @@ def main(*args):
             else:
                 data = fp.read()
                 try:
-                    udata = data.encode(encoding)
+                    udata = (data.encode(encoding))
                     # (data, encoding)
                 except UnicodeDecodeError as detail:
                     if not quiet:
                         print >>sys.stderr, "warning: %s: %s" % (fp_desc, str(detail))
-                    udata = data.encode(encoding, 'replace')
+                    udata = str(data.encode(encoding, 'replace'))
                     # data.encode(encoding, 'replace')
                     # bytes(data, encoding, 'replace')
                 tokens = tokenise(udata, lsd, glue)
